@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Todo TinyBase UI</title>
+<title>TinyBase + Supabase Todo UI</title>
 <style>
   body { font-family: sans-serif; padding: 20px; }
   ul { list-style: none; padding: 0; }
@@ -12,7 +12,7 @@
 </style>
 </head>
 <body>
-<h1>TinyBase Todo UI</h1>
+<h1>TinyBase + Supabase Todo UI</h1>
 
 <input type="text" id="newTitle" placeholder="New todo">
 <button id="addTodo">Add Todo</button>
@@ -21,33 +21,17 @@
 
 <script type="module">
 import { store } from './src/tinybaseStore.js';
-import { enableRealtimeSync } from './src/sync/realtimeSync.js';
 import { supabase } from './src/supabaseClient.js';
- 
-
-async function loadInitialTodos() {
-  const { data, error } = await supabase.from('todos').select('*');
-  if (error) return console.error('Error loading todos:', error);
-
-  data.forEach(row => {
-    store.setRow('todos', row.id, {
-      title: row.title,
-      is_done: row.is_done,
-      updated_at: row.updated_at
-    });
-  });
-}
-
-await loadInitialTodos();
+import { enableRealtimeSync } from './src/sync/realtimeSync.js';
 
 const todoList = document.getElementById('todoList');
 const newTitleInput = document.getElementById('newTitle');
 const addBtn = document.getElementById('addTodo');
 
+// Render UI from TinyBase
 function renderTodos() {
   todoList.innerHTML = '';
   const todos = store.getTable('todos');
-  console.log(todos)
   for (const id in todos) {
     const row = todos[id];
     const li = document.createElement('li');
@@ -58,7 +42,8 @@ function renderTodos() {
     doneCheckbox.onchange = () => {
       store.setRow('todos', id, {
         ...row,
-        is_done: doneCheckbox.checked
+        is_done: doneCheckbox.checked,
+        updated_at: new Date().toISOString()
       });
     };
 
@@ -68,7 +53,8 @@ function renderTodos() {
     titleInput.onchange = () => {
       store.setRow('todos', id, {
         ...row,
-        title: titleInput.value
+        title: titleInput.value,
+        updated_at: new Date().toISOString()
       });
     };
 
@@ -83,23 +69,41 @@ function renderTodos() {
   }
 }
 
-// Observe TinyBase changes and rerender
+// Observe TinyBase changes
 store.addTableListener('todos', renderTodos);
 renderTodos();
+
+// Load initial todos from Supabase
+async function loadInitialFromSupabase() {
+  const { data, error } = await supabase.from('todos').select('*');
+  if (error) return console.error('Error loading todos:', error);
+  data.forEach(row => {
+    store.setRow('todos', row.id, {
+      title: row.title,
+      is_done: row.is_done,
+      updated_at: row.updated_at
+    });
+  });
+}
+
+await loadInitialFromSupabase();
+
+// Enable two-way realtime sync
+enableRealtimeSync(store);
 
 // Add new todo
 addBtn.onclick = () => {
   const title = newTitleInput.value.trim();
   if (!title) return;
+
   store.setRow('todos', crypto.randomUUID(), {
-    title,
+    title: title,
     is_done: false,
     updated_at: new Date().toISOString()
   });
+
   newTitleInput.value = '';
 };
-enableRealtimeSync(store);
-
 </script>
 </body>
 </html>
