@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Todo TinyBase UI</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  ul { list-style: none; padding: 0; }
+  li { margin-bottom: 10px; }
+  input[type=text] { width: 200px; }
+  button { margin-left: 5px; }
+</style>
+</head>
+<body>
+<h1>TinyBase Todo UI</h1>
+
+<input type="text" id="newTitle" placeholder="New todo">
+<button id="addTodo">Add Todo</button>
+
+<ul id="todoList"></ul>
+
+<script type="module">
+import { store } from './src/tinybaseStore.js';
+import { enableRealtimeSync } from './src/sync/realtimeSync.js';
+import { supabase } from './src/supabaseClient.js';
+ 
+
+async function loadInitialTodos() {
+  const { data, error } = await supabase.from('todos').select('*');
+  if (error) return console.error('Error loading todos:', error);
+
+  data.forEach(row => {
+    store.setRow('todos', row.id, {
+      title: row.title,
+      is_done: row.is_done,
+      updated_at: row.updated_at
+    });
+  });
+}
+
+await loadInitialTodos();
+
+const todoList = document.getElementById('todoList');
+const newTitleInput = document.getElementById('newTitle');
+const addBtn = document.getElementById('addTodo');
+
+function renderTodos() {
+  todoList.innerHTML = '';
+  const todos = store.getTable('todos');
+  console.log(todos)
+  for (const id in todos) {
+    const row = todos[id];
+    const li = document.createElement('li');
+
+    const doneCheckbox = document.createElement('input');
+    doneCheckbox.type = 'checkbox';
+    doneCheckbox.checked = row.is_done;
+    doneCheckbox.onchange = () => {
+      store.setRow('todos', id, {
+        ...row,
+        is_done: doneCheckbox.checked
+      });
+    };
+
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.value = row.title;
+    titleInput.onchange = () => {
+      store.setRow('todos', id, {
+        ...row,
+        title: titleInput.value
+      });
+    };
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.onclick = () => store.delRow('todos', id);
+
+    li.appendChild(doneCheckbox);
+    li.appendChild(titleInput);
+    li.appendChild(deleteBtn);
+    todoList.appendChild(li);
+  }
+}
+
+// Observe TinyBase changes and rerender
+store.addTableListener('todos', renderTodos);
+renderTodos();
+
+// Add new todo
+addBtn.onclick = () => {
+  const title = newTitleInput.value.trim();
+  if (!title) return;
+  store.setRow('todos', crypto.randomUUID(), {
+    title,
+    is_done: false,
+    updated_at: new Date().toISOString()
+  });
+  newTitleInput.value = '';
+};
+enableRealtimeSync(store);
+
+</script>
+</body>
+</html>

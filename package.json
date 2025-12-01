@@ -1,0 +1,18 @@
+{
+  "name": "tinybase-supabase-demo",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.86.0",
+    "dotenv": "^16.0.3",
+    "tinybase": "^4.8.17"
+  },
+  "devDependencies": {
+    "vite": "^7.2.4"
+  }
+}
