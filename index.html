@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>TinyBase + Supabase Todo UI</title>
+
+<!-- PWA HEADER -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="512x512" href="/icons/bakery-512.png">
+<link rel="apple-touch-icon" href="/icons/bakery-512.png">
+<meta name="theme-color" content="#ffffff">
+
 <style>
   body { font-family: sans-serif; padding: 20px; }
   ul { list-style: none; padding: 0; }
@@ -104,6 +111,12 @@ addBtn.onclick = () => {
 
   newTitleInput.value = '';
 };
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .catch(err => console.error('SW registration failed:', err));
+}
 </script>
 </body>
 </html>
